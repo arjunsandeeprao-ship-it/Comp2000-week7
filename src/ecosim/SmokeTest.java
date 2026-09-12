@@ -26,17 +26,42 @@ public final class SmokeTest {
         }
 
         System.out.println("tick\tplants\therbivores\tcarnivores\toverpopEvents");
-        for (int tick = 1; tick <= 400; tick++) {
+        long herbivoreSum = 0, carnivoreSum = 0, plantSum = 0;
+        int samples = 0;
+        boolean herbivoresSurvived = true;
+        boolean carnivoresSurvived = true;
+
+        final int totalTicks = 400;
+        for (int tick = 1; tick <= totalTicks; tick++) {
             world.tick();
+            long plants = world.countOfType(Plant.class);
+            long herbivores = world.countOfType(Herbivore.class);
+            long carnivores = world.countOfType(Carnivore.class);
+
             if (tick % 20 == 0) {
                 System.out.printf("%d\t%d\t%d\t%d\t%d%n",
-                        tick,
-                        world.countOfType(Plant.class),
-                        world.countOfType(Herbivore.class),
-                        world.countOfType(Carnivore.class),
-                        world.getOverpopulationEvents());
+                        tick, plants, herbivores, carnivores, world.getOverpopulationEvents());
             }
+
+            plantSum += plants;
+            herbivoreSum += herbivores;
+            carnivoreSum += carnivores;
+            samples++;
+            if (herbivores == 0) herbivoresSurvived = false;
+            if (carnivores == 0) carnivoresSurvived = false;
         }
+
+        // Summary report: at a glance, did the ecosystem stay balanced for the
+        // whole run, or collapse partway through? Useful after tuning
+        // constants (e.g. AMBIENT_SEED_CHANCE in World) without having to
+        // eyeball 20 rows of the tick-by-tick table above every time.
+        System.out.println();
+        System.out.println("=== Summary over " + totalTicks + " ticks (seed 42) ===");
+        System.out.printf("Average population -- plants: %.1f, herbivores: %.1f, carnivores: %.1f%n",
+                plantSum / (double) samples, herbivoreSum / (double) samples, carnivoreSum / (double) samples);
+        System.out.println("Herbivores survived the full run: " + herbivoresSurvived);
+        System.out.println("Carnivores survived the full run: " + carnivoresSurvived);
+        System.out.println("Full-grid (OverpopulationException) events: " + world.getOverpopulationEvents());
     }
 
     private static Position randomFree(World world) {
