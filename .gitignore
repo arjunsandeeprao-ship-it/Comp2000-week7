@@ -1,0 +1,7 @@
+bin/
+*.class
+.DS_Store
+design/__pycache__/
+*.pyc
+app.log
+shots/
