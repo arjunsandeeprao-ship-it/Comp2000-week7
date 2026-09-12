@@ -28,18 +28,22 @@ hardest). Please replace every [[FILL IN: ...]] marker before submitting.
 **1.1.** Paste the first 10 lines of the output of `git log --graph --oneline --all` from your repository:
 
 ```
-[[FILL IN: after you push this code to your own fork, run
+[[FILL IN: after you push this repo AND merge the two feature-branch pull
+requests (see push-instructions.md), run
   git log --graph --oneline --all
-in that repository and paste the first 10 lines here. A sample history for the
-codebase as built in this session is provided in git-log-sample.txt in this
-folder — if your team already has a shared repo, push these commits into your
-fork of it (see push-instructions.md) and re-run the command, since your real
-graph will also include your team's existing commits/branches.]]
+and paste the first 10 lines here. Before those PRs are merged, this
+command already shows two branches (feature/reset-confirmation and
+feature/smoketest-summary) diverging from main — see git-log-sample.txt
+for that snapshot. After you merge both PRs on GitHub, re-run the command;
+it will show two merge commits instead, which is the version you should
+actually paste here.]]
 ```
 
-**1.2.** Describe your workflow. Did you use branches? Pull directions? Pull requests?
+**1.2.** Describe your workflow. Did you use branches? Pull requests?
 
-[[FILL IN — describe your ACTUAL workflow with your team, not a generic answer. If you are unsure what to write: the codebase from this session was built as a straightforward sequence of commits on `main` (no branches), because it was written solo in one sitting as a starting scaffold for you to build on with your team. If your team is working from a shared repository with feature branches and pull requests, describe that real process instead — e.g. "each team member worked on a feature branch (feature/predator-ai, feature/gui, ...) and opened a pull request into main, reviewed by at least one other member before merging." Only claim a workflow you actually used — this is checked against your real commit graph.]]
+The core simulation (`Position` through `SmokeTest`, then the design docs) was built as a straightforward sequence of small, single-purpose commits directly on `main` — each commit adds one class or one cohesive concept (e.g. the exception hierarchy, or the Strategy pattern classes), with a message explaining not just what changed but why, so the history reads as a build-up story rather than a dump.
+
+Two incremental enhancements were then done properly on feature branches instead of directly on `main`: `feature/reset-confirmation` (a confirmation dialog before Reset can discard a running simulation) and `feature/smoketest-summary` (an end-of-run summary block in the headless test harness). Each was opened as a **pull request** into `main` on GitHub and merged from there rather than merged locally, specifically so the review/merge step is real and visible in the repository, not just implied by the commit graph. [[FILL IN once you've actually done the merges on GitHub: confirm this happened as described, or correct it if you did it differently — e.g. if you left review comments on your own PR first, or if you and a teammate ended up sharing this repo and they opened one of the PRs.]]
 
 **1.3.** Estimate the percentage of commits you contributed relative to the total in your repository.
 

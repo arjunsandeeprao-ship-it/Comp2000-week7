@@ -1,0 +1,22 @@
+* 09e5866 Add end-of-run summary to SmokeTest
+| * df50f73 Ask for confirmation before resetting the simulation
+|/  
+* 269af89 Add worksheet-7 answers referencing the implemented design
+* 51d3367 Add week-by-week log book template
+* b5226b0 Add program design write-up and class diagram (PDF)
+* 242f280 Add SmokeTest: headless console harness for validating ecosystem dynamics
+* f619397 Add SimulationFrame and Main: Swing GUI controls and entry point
+* 646a40e Add WorldPanel: polymorphic grid rendering
+* a27c300 Add OrganismFactory: centralise species construction
+* 4a9c2d0 Add Carnivore: eats Herbivore, has no predator of its own
+* fa59d0c Add Herbivore: eats Plant, flees Carnivore via FleeOrSeekStrategy
+* 08bb700 Add Animal: template-method base class for moving/eating organisms
+* bef57e0 Add World: grid, move/placement rules, and the tick loop
+* 08cb2b1 Add CircularBuffer<T>: generic ring buffer for population history
+* e0ad38a Add FleeOrSeekStrategy: generic Class<T>-token flee/seek movement
+* d945c82 Add Strategy pattern scaffold: MovementStrategy + RandomWalkStrategy
+* 38e8a7f Add custom checked exception hierarchy
+* 218bde0 Add Plant: stationary Edible that grows and spreads over time
+* f49b345 Add Organism: abstract base for everything on the grid
+* 2d9eb26 Add foundational types: Position (immutable), Locatable, Edible
+* 4015e96 Initial project scaffold: README and .gitignore
