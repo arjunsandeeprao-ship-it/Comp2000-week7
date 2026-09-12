@@ -106,7 +106,7 @@ public class SimulationFrame extends JFrame {
         panel.add(stepButton);
 
         JButton resetButton = new JButton("Reset");
-        resetButton.addActionListener(e -> reset());
+        resetButton.addActionListener(this::onResetRequested);
         panel.add(resetButton);
 
         panel.add(new JLabel("Speed:"));
@@ -137,6 +137,26 @@ public class SimulationFrame extends JFrame {
         updateStats();
         worldPanel.repaint();
         sparklinePanel.repaint();
+    }
+
+    /**
+     * Confirms before resetting: a long-running simulation (hundreds of ticks
+     * of population history) is easy to lose with one misplaced click, and
+     * unlike Start/Pause/Step, Reset is not undoable.
+     */
+    private void onResetRequested(ActionEvent e) {
+        boolean wasRunning = timer.isRunning();
+        if (wasRunning) {
+            timer.stop();
+        }
+        int choice = JOptionPane.showConfirmDialog(this,
+                "Reset will discard the current population and history (tick " + world.getTickCount() + "). Continue?",
+                "Confirm reset", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (choice == JOptionPane.YES_OPTION) {
+            reset();
+        } else if (wasRunning) {
+            timer.start();
+        }
     }
 
     private void reset() {
