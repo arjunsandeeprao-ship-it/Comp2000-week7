@@ -4,7 +4,6 @@ import ecosim.exceptions.OverpopulationException;
 import ecosim.strategy.MovementStrategy;
 import java.awt.Color;
 import java.util.List;
-import java.util.Optional;
 
 /** Eats plants, flees carnivores. See {@link Animal} for the shared tick logic. */
 public class Herbivore extends Animal {
@@ -20,20 +19,18 @@ public class Herbivore extends Animal {
 
     @Override
     protected void forage(World world) {
-        List<Organism> neighbours = world.getNeighbours(getPosition());
-        for (Organism neighbour : neighbours) {
-            // instanceof check is intentional and narrow: a herbivore's diet
-            // is plants only, even though other Edible things (other
-            // herbivores are not Edible in this model, but future species
-            // could be) might be adjacent.
-            if (neighbour instanceof Plant && neighbour.isAlive()) {
-                Plant plant = (Plant) neighbour;
-                energy += plant.getEnergyValue();
-                plant.markConsumed();
-                world.removeOrganism(plant);
-                return;
-            }
-        }
+        // Stream form of "find the first living adjacent Plant and eat it".
+        // getNeighbours() already filters out the dead; the type filter is
+        // intentional and narrow -- this species' diet is Plant only.
+        world.getNeighbours(getPosition()).stream()
+                .filter(Plant.class::isInstance)
+                .map(Plant.class::cast)
+                .findFirst()
+                .ifPresent(plant -> {
+                    energy += plant.getEnergyValue();
+                    plant.markConsumed();
+                    world.removeOrganism(plant);
+                });
     }
 
     @Override
@@ -44,7 +41,7 @@ public class Herbivore extends Animal {
         }
         Position birthSite = freeNeighbours.get(world.getRandom().nextInt(freeNeighbours.size()));
         energy -= REPRODUCTION_COST;
-        world.addOrganism(OrganismFactory.createHerbivore(birthSite));
+        world.addOrganism(OrganismFactory.createHerbivore(birthSite, REPRODUCTION_COST));
     }
 
     @Override
