@@ -7,7 +7,8 @@ import java.util.List;
 /**
  * A stationary food source. Plants do not move and do not eat anything;
  * they simply grow, and once mature they may spread a copy of themselves
- * into a free neighbouring cell.
+ * into a free neighbouring cell. How readily they spread depends on the
+ * {@link Season}: lush in spring, almost dormant in winter.
  */
 public class Plant extends Organism implements Edible {
 
@@ -21,7 +22,7 @@ public class Plant extends Organism implements Edible {
     @Override
     public void act(World world) throws OverpopulationException {
         incrementAge();
-        if (getAge() >= MATURITY_AGE && world.getRandom().nextDouble() < SPREAD_CHANCE) {
+        if (getAge() >= MATURITY_AGE && world.getRandom().nextDouble() < world.getSeason().adjustSpreadChance(SPREAD_CHANCE)) {
             trySpread(world);
         }
     }
