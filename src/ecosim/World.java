@@ -3,13 +3,19 @@ package ecosim;
 import ecosim.exceptions.InvalidPositionException;
 import ecosim.exceptions.OverpopulationException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * The grid and the rules for what is allowed to happen on it. {@code World}
@@ -28,6 +34,8 @@ import java.util.Random;
 public class World {
 
     private static final int HISTORY_LENGTH = 120;
+    /** Ticks per season; a full simulated year is {@code 4 * SEASON_LENGTH} ticks. */
+    public static final int SEASON_LENGTH = 50;
     /**
      * Per-tick chance of a new plant sprouting at a random free cell,
      * independent of any existing plant. Real plant populations are
@@ -42,6 +50,18 @@ public class World {
      * instead of collapsing after a couple of hundred ticks.
      */
     private static final double AMBIENT_SEED_CHANCE = 0.6;
+    /**
+     * Per-tick chance that a single animal migrates in from outside the map
+     * (arriving on a random free edge cell) while its species is locally
+     * extinct. Real habitats are not sealed boxes: a valley whose foxes all
+     * starve is eventually recolonised by foxes from the next valley. Without
+     * this, the batch experiment showed that 100% of seeded runs ended in
+     * permanent total extinction within a few hundred ticks, because one
+     * crash is enough to remove a species forever. Migration turns those
+     * permanent extinctions into <em>local</em> extinctions followed by
+     * recolonisation -- the boom/crash/recover cycle keeps going.
+     */
+    static final double MIGRATION_CHANCE = Double.parseDouble(System.getProperty("ecosim.migration", "0.1"));
     private static final int[][] EIGHT_DIRECTIONS = {
             {-1, -1}, {0, -1}, {1, -1},
             {-1, 0},           {1, 0},
@@ -60,6 +80,17 @@ public class World {
 
     private long tickCount = 0;
     private long overpopulationEvents = 0;
+    private long migrations = 0;
+    private Season season = Season.SPRING;
+
+    /*
+     * Observer pattern: the subject's list of observers. CopyOnWriteArrayList
+     * so a listener may safely unregister itself (or register another)
+     * from inside its own callback without a ConcurrentModificationException.
+     */
+    private final List<SimulationListener> listeners = new CopyOnWriteArrayList<>();
+    /** Species currently extinct and already announced, so each crash is announced exactly once. */
+    private final Set<Class<? extends Organism>> extinctSpecies = new HashSet<>();
 
     public World(int width, int height, long seed) {
         this.width = width;
@@ -85,6 +116,19 @@ public class World {
 
     public long getOverpopulationEvents() {
         return overpopulationEvents;
+    }
+
+    public Season getSeason() {
+        return season;
+    }
+
+    /** Registers an observer to be notified after every tick. */
+    public void addListener(SimulationListener listener) {
+        listeners.add(Objects.requireNonNull(listener));
+    }
+
+    public void removeListener(SimulationListener listener) {
+        listeners.remove(listener);
     }
 
     public boolean isInBounds(Position p) {
@@ -131,27 +175,31 @@ public class World {
         organism.setPosition(target);
     }
 
+    /** Living organisms in the eight cells surrounding {@code center}. */
     public List<Organism> getNeighbours(Position center) {
-        List<Organism> result = new ArrayList<>();
-        for (int[] d : EIGHT_DIRECTIONS) {
-            Position p = center.translate(d[0], d[1]);
-            Organism o = grid.get(p);
-            if (o != null && o.isAlive()) {
-                result.add(o);
-            }
-        }
-        return result;
+        return neighbourPositions(center)
+                .map(grid::get)
+                .filter(Objects::nonNull)
+                .filter(Organism::isAlive)
+                .collect(Collectors.toList());
     }
 
+    /** In-bounds, unoccupied cells among the eight surrounding {@code center}. */
     public List<Position> freeNeighbours(Position center) {
-        List<Position> result = new ArrayList<>();
-        for (int[] d : EIGHT_DIRECTIONS) {
-            Position p = center.translate(d[0], d[1]);
-            if (isFree(p)) {
-                result.add(p);
-            }
-        }
-        return result;
+        return neighbourPositions(center)
+                .filter(this::isFree)
+                .collect(Collectors.toList());
+    }
+
+    /** Every cell on the outer border of the grid, as a stream. */
+    private java.util.stream.Stream<Position> edgeCells() {
+        return java.util.stream.IntStream.range(0, width * height)
+                .mapToObj(i -> new Position(i % width, i / width))
+                .filter(p -> p.getX() == 0 || p.getY() == 0 || p.getX() == width - 1 || p.getY() == height - 1);
+    }
+
+    private java.util.stream.Stream<Position> neighbourPositions(Position center) {
+        return Arrays.stream(EIGHT_DIRECTIONS).map(d -> center.translate(d[0], d[1]));
     }
 
     /**
@@ -180,7 +228,7 @@ public class World {
     }
 
     private void maybeSeedAmbientPlant() {
-        if (random.nextDouble() >= AMBIENT_SEED_CHANCE) {
+        if (random.nextDouble() >= season.adjustSeedingChance(AMBIENT_SEED_CHANCE)) {
             return;
         }
         Position candidate = new Position(random.nextInt(width), random.nextInt(height));
@@ -191,6 +239,29 @@ public class World {
                 // Grid filled up between the isFree check and now -- fine, skip this tick.
             }
         }
+    }
+
+    private void maybeMigrate(Class<? extends Animal> species,
+                              java.util.function.Function<Position, ? extends Animal> factory) {
+        if (countOfType(species) > 0 || random.nextDouble() >= MIGRATION_CHANCE) {
+            return;
+        }
+        List<Position> freeEdge = edgeCells()
+                .filter(this::isFree)
+                .collect(Collectors.toList());
+        if (freeEdge.isEmpty()) {
+            return;
+        }
+        try {
+            addOrganism(factory.apply(freeEdge.get(random.nextInt(freeEdge.size()))));
+            migrations++;
+        } catch (OverpopulationException e) {
+            // Cannot happen (cell checked free just above), but if it did, the migrant simply doesn't arrive.
+        }
+    }
+
+    public long getMigrations() {
+        return migrations;
     }
 
     public List<Organism> getOrganisms() {
@@ -220,6 +291,9 @@ public class World {
      */
     public void tick() {
         tickCount++;
+        if (tickCount % SEASON_LENGTH == 0) {
+            season = season.next();
+        }
         List<Organism> snapshot = new ArrayList<>(organisms);
         for (Organism organism : snapshot) {
             if (!organism.isAlive()) {
@@ -241,9 +315,24 @@ public class World {
         grid.values().removeIf(o -> !o.isAlive());
 
         maybeSeedAmbientPlant();
+        maybeMigrate(Herbivore.class, OrganismFactory::createHerbivore);
+        maybeMigrate(Carnivore.class, OrganismFactory::createCarnivore);
 
         plantHistory.add((int) countOfType(Plant.class));
         herbivoreHistory.add((int) countOfType(Herbivore.class));
         carnivoreHistory.add((int) countOfType(Carnivore.class));
+
+        notifyListeners();
+    }
+
+    private void notifyListeners() {
+        for (Class<? extends Organism> species : List.of(Plant.class, Herbivore.class, Carnivore.class)) {
+            if (countOfType(species) > 0) {
+                extinctSpecies.remove(species); // recolonised: re-arm so a later crash is announced again
+            } else if (extinctSpecies.add(species)) {
+                listeners.forEach(l -> l.onExtinction(this, species));
+            }
+        }
+        listeners.forEach(l -> l.onTickCompleted(this));
     }
 }
