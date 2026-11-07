@@ -104,6 +104,7 @@ The batch experiment showed that **0 out of the seeded runs** had any animals le
 original simulation (even before seasons) always ended in total extinction; the Week 7 claim that ambient
 plant seeding "keeps it running for hundreds of ticks" was true for one lucky seed, not in general.
 I found two causes:
+
 1. An energy bug: a newborn got the full `INITIAL_ENERGY` (40) while the parent only paid
    `REPRODUCTION_COST` (30), so every birth created energy from nothing. I added
    `OrganismFactory.createHerbivore(Position, int)`/`createCarnivore(Position, int)` so a newborn carries

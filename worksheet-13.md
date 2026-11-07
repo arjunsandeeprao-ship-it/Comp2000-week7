@@ -253,8 +253,7 @@ I also tried "satiation" (animals don't eat when full) as a stabiliser. The batc
 
 **4.1.** Attach or link your log book entries for Weeks 7–13.
 
-- Week 7: in the Weeks 1–7 log book submitted with Worksheet 1.
-- Weeks 8–13: `logbook/logbook-weeks-8-13.md` in the repository — https://github.com/arjunsandeeprao-ship-it/Comp2000-week7/blob/main/logbook/logbook-weeks-8-13.md
+Submitted as a single file alongside this worksheet: `Logbook-Arjun-Sandeep-Rao.pdf` (Weeks 1–7 followed by Weeks 8–13). The Weeks 8–13 entries are also in the repository at https://github.com/arjunsandeeprao-ship-it/Comp2000-week7/blob/main/logbook/logbook-weeks-8-13.md
 
 **4.2.** Reflect on the semester:
 
