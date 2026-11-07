@@ -16,6 +16,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
+import java.util.Map;
 
 /**
  * The top-level Swing window: a {@link WorldPanel} to watch, a small
@@ -38,6 +39,7 @@ public class SimulationFrame extends JFrame {
     private JLabel statsLabel;
     private Timer timer;
     private JButton startPauseButton;
+    private String lastCrash = "none yet";
 
     public SimulationFrame() {
         super("Ecosystem Simulation - COMP2000");
@@ -59,6 +61,32 @@ public class SimulationFrame extends JFrame {
         setLocationRelativeTo(null);
 
         timer = new Timer(120, this::onTick);
+        attachListeners(world);
+    }
+
+    /**
+     * Observer registration. The frame no longer refreshes its views by hand
+     * after calling world.tick(); it subscribes to the World instead, so the
+     * views update whenever the World announces a completed tick -- whoever
+     * triggered it (the Timer, the Step button, or anything added later).
+     */
+    private void attachListeners(World w) {
+        w.addListener(new SimulationListener() {
+            @Override
+            public void onTickCompleted(World world) {
+                updateStats();
+                worldPanel.repaint();
+                sparklinePanel.repaint();
+            }
+
+            @Override
+            public void onExtinction(World world, Class<? extends Organism> species) {
+                // A local crash is now routine (migrants recolonise later), so it is
+                // reported in the status bar rather than with a modal dialog.
+                lastCrash = species.getSimpleName() + "s crashed at tick " + world.getTickCount()
+                        + " (" + world.getSeason() + ")";
+            }
+        });
     }
 
     private void seedWorld(World world) {
@@ -114,12 +142,15 @@ public class SimulationFrame extends JFrame {
         speedSlider.addChangeListener(e -> timer.setDelay(speedSlider.getValue()));
         panel.add(speedSlider);
 
+        // Stats get their own row underneath the buttons so the window stays as wide as the grid.
         statsLabel = new JLabel();
-        statsLabel.setPreferredSize(new Dimension(420, 20));
-        panel.add(statsLabel);
         updateStats();
-
-        return panel;
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(panel, BorderLayout.NORTH);
+        JPanel statsRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statsRow.add(statsLabel);
+        wrapper.add(statsRow, BorderLayout.SOUTH);
+        return wrapper;
     }
 
     private void toggleRunning(ActionEvent e) {
@@ -133,10 +164,7 @@ public class SimulationFrame extends JFrame {
     }
 
     private void onTick(ActionEvent e) {
-        world.tick();
-        updateStats();
-        worldPanel.repaint();
-        sparklinePanel.repaint();
+        world.tick(); // views refresh via the SimulationListener registered in attachListeners()
     }
 
     /**
@@ -164,6 +192,8 @@ public class SimulationFrame extends JFrame {
         startPauseButton.setText("Start");
         world = new World(GRID_WIDTH, GRID_HEIGHT, System.currentTimeMillis());
         seedWorld(world);
+        lastCrash = "none yet";
+        attachListeners(world);
         worldPanel.setWorld(world);
         sparklinePanel.setWorld(world);
         updateStats();
@@ -172,13 +202,19 @@ public class SimulationFrame extends JFrame {
     }
 
     private void updateStats() {
+        Map<PopulationStats.Species, Long> counts = PopulationStats.countBySpecies(world.getOrganisms());
+        PopulationStats.EnergyReport herbEnergy = PopulationStats.energyOf(world, Herbivore.class);
         statsLabel.setText(String.format(
-                "Tick %d | Plants: %d | Herbivores: %d | Carnivores: %d | Full-grid events: %d",
+                "Tick %d (%s) | Plants: %d | Herbivores: %d (avg energy %.0f) | Carnivores: %d | Full-grid: %d",
                 world.getTickCount(),
-                world.countOfType(Plant.class),
-                world.countOfType(Herbivore.class),
-                world.countOfType(Carnivore.class),
+                world.getSeason(),
+                counts.get(PopulationStats.Species.PLANT),
+                counts.get(PopulationStats.Species.HERBIVORE),
+                herbEnergy.getAverageEnergy(),
+                counts.get(PopulationStats.Species.CARNIVORE),
                 world.getOverpopulationEvents()));
+        setTitle("Ecosystem Simulation - COMP2000   |   last crash: " + lastCrash
+                + "   |   migrants: " + world.getMigrations());
     }
 
     /** Tiny inline population-trend chart, reading straight from World's CircularBuffers. */
