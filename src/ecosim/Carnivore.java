@@ -19,16 +19,18 @@ public class Carnivore extends Animal {
 
     @Override
     protected void forage(World world) {
-        List<Organism> neighbours = world.getNeighbours(getPosition());
-        for (Organism neighbour : neighbours) {
-            if (neighbour instanceof Herbivore && neighbour.isAlive()) {
-                Herbivore prey = (Herbivore) neighbour;
-                energy += prey.getEnergyValue();
-                prey.markConsumed();
-                world.removeOrganism(prey);
-                return;
-            }
-        }
+        // Stream form of "find the first living adjacent Herbivore and eat it".
+        // getNeighbours() already filters out the dead; the type filter is
+        // intentional and narrow -- this species' diet is Herbivore only.
+        world.getNeighbours(getPosition()).stream()
+                .filter(Herbivore.class::isInstance)
+                .map(Herbivore.class::cast)
+                .findFirst()
+                .ifPresent(prey -> {
+                    energy += prey.getEnergyValue();
+                    prey.markConsumed();
+                    world.removeOrganism(prey);
+                });
     }
 
     @Override
@@ -39,7 +41,7 @@ public class Carnivore extends Animal {
         }
         Position birthSite = freeNeighbours.get(world.getRandom().nextInt(freeNeighbours.size()));
         energy -= REPRODUCTION_COST;
-        world.addOrganism(OrganismFactory.createCarnivore(birthSite));
+        world.addOrganism(OrganismFactory.createCarnivore(birthSite, REPRODUCTION_COST));
     }
 
     @Override
