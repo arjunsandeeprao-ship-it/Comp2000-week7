@@ -1,6 +1,7 @@
 package ecosim;
 
 import ecosim.exceptions.OverpopulationException;
+import java.util.Map;
 
 /**
  * A headless, GUI-free smoke test: seeds a world identical in scale to
@@ -25,7 +26,33 @@ public final class SmokeTest {
             world.addOrganism(OrganismFactory.createCarnivore(randomFree(world)));
         }
 
-        System.out.println("tick\tplants\therbivores\tcarnivores\toverpopEvents");
+        System.out.println("tick\tseason\tplants\therbivores\tcarnivores\toverpopEvents\therbivoreEnergy");
+
+        // Observer pattern, registered as lambdas: the World calls these back
+        // after each tick, so the loop below only has to drive the clock.
+        world.addListener(w -> {
+            if (w.getTickCount() % 20 == 0) {
+                Map<PopulationStats.Species, Long> c = PopulationStats.countBySpecies(w.getOrganisms());
+                System.out.printf("%d\t%s\t%d\t%d\t%d\t%d\t%s%n",
+                        w.getTickCount(), w.getSeason(),
+                        c.get(PopulationStats.Species.PLANT),
+                        c.get(PopulationStats.Species.HERBIVORE),
+                        c.get(PopulationStats.Species.CARNIVORE),
+                        w.getOverpopulationEvents(),
+                        PopulationStats.energyOf(w, Herbivore.class));
+            }
+        });
+        world.addListener(new SimulationListener() {
+            @Override
+            public void onTickCompleted(World w) {
+            }
+
+            @Override
+            public void onExtinction(World w, Class<? extends Organism> species) {
+                System.out.println("!! " + species.getSimpleName() + " extinct at tick " + w.getTickCount());
+            }
+        });
+
         long herbivoreSum = 0, carnivoreSum = 0, plantSum = 0;
         int samples = 0;
         boolean herbivoresSurvived = true;
@@ -34,14 +61,10 @@ public final class SmokeTest {
         final int totalTicks = 400;
         for (int tick = 1; tick <= totalTicks; tick++) {
             world.tick();
-            long plants = world.countOfType(Plant.class);
-            long herbivores = world.countOfType(Herbivore.class);
-            long carnivores = world.countOfType(Carnivore.class);
-
-            if (tick % 20 == 0) {
-                System.out.printf("%d\t%d\t%d\t%d\t%d%n",
-                        tick, plants, herbivores, carnivores, world.getOverpopulationEvents());
-            }
+            Map<PopulationStats.Species, Long> counts = PopulationStats.countBySpecies(world.getOrganisms());
+            long plants = counts.get(PopulationStats.Species.PLANT);
+            long herbivores = counts.get(PopulationStats.Species.HERBIVORE);
+            long carnivores = counts.get(PopulationStats.Species.CARNIVORE);
 
             plantSum += plants;
             herbivoreSum += herbivores;
