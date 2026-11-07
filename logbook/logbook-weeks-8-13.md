@@ -8,7 +8,7 @@ Continues the Weeks 1–7 log book submitted with Worksheet 1.
 
 ## Week 8 — Observer pattern: decoupling World from the GUI
 
-**Date:** [[FILL IN]]
+**Date:** 27 September – 3 October
 
 **What I did:**
 Added a `SimulationListener` interface (`onTickCompleted`, plus a default `onExtinction`) and gave `World`
@@ -30,7 +30,7 @@ with no GUI attached can now run headless, many at a time, with each run attachi
 
 ## Week 9 — Streams and lambdas throughout the model
 
-**Date:** [[FILL IN]]
+**Date:** 4 – 10 October
 
 **What I did:**
 Rewrote `World.getNeighbours`/`freeNeighbours` as stream pipelines over the eight directions, rewrote
@@ -55,7 +55,7 @@ experiment in mind.
 
 ## Week 10 — Seasons
 
-**Date:** [[FILL IN]]
+**Date:** 11 – 17 October
 
 **What I did:**
 Added a `Season` enum (SPRING, SUMMER, AUTUMN, WINTER) with behaviour: each season scales the plant
@@ -76,7 +76,7 @@ global world state. The stronger swings directly caused the Week 12 investigatio
 
 ## Week 11 — Parallel batch experiment
 
-**Date:** [[FILL IN]]
+**Date:** 18 – 24 October
 
 **What I did:**
 Wrote `BatchExperiment`: runs the whole simulation from 100 different seeds using
@@ -97,7 +97,7 @@ run revealed the problem I spent Week 12 on.
 
 ## Week 12 — Finding out the ecosystem always collapsed
 
-**Date:** [[FILL IN]]
+**Date:** 25 – 31 October
 
 **What I did:**
 The batch experiment showed that **0 out of the seeded runs** had any animals left after 600 ticks — the
@@ -128,7 +128,7 @@ title bar instead of a pop-up, because crashes are now routine.
 
 ## Week 13 — Diagrams, worksheet, submission
 
-**Date:** [[FILL IN]]
+**Date:** 1 – 8 November
 
 **What I did:**
 Produced `design/design-patterns.pdf` (one page per pattern: Template Method, Strategy, Simple Factory,
