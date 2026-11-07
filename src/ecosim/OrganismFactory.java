@@ -24,13 +24,31 @@ public final class OrganismFactory {
         return new Plant(position);
     }
 
+    /** A herbivore for the initial population, with the standard starting energy. */
     public static Herbivore createHerbivore(Position position) {
-        return new Herbivore(position, Herbivore.INITIAL_ENERGY,
+        return createHerbivore(position, Herbivore.INITIAL_ENERGY);
+    }
+
+    /**
+     * A newborn herbivore carrying exactly {@code energy} -- the amount its
+     * parent paid to reproduce. Energy is conserved across birth: earlier
+     * versions gave every newborn the full INITIAL_ENERGY regardless of what
+     * the parent paid, which silently created energy from nothing on every
+     * birth and drove the boom-and-crash collapse (see BatchExperiment).
+     */
+    public static Herbivore createHerbivore(Position position, int energy) {
+        return new Herbivore(position, energy,
                 new FleeOrSeekStrategy(Carnivore.class, Plant.class));
     }
 
+    /** A carnivore for the initial population, with the standard starting energy. */
     public static Carnivore createCarnivore(Position position) {
-        return new Carnivore(position, Carnivore.INITIAL_ENERGY,
+        return createCarnivore(position, Carnivore.INITIAL_ENERGY);
+    }
+
+    /** A newborn carnivore carrying the energy its parent paid (see createHerbivore). */
+    public static Carnivore createCarnivore(Position position, int energy) {
+        return new Carnivore(position, energy,
                 new FleeOrSeekStrategy(null, Herbivore.class));
     }
 }
