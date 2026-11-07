@@ -41,6 +41,10 @@ public class WorldPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        // Tint the whole grid with the current season's colour.
+        g2.setColor(world.getSeason().getBackground());
+        g2.fillRect(0, 0, world.getWidth() * cellSize, world.getHeight() * cellSize);
+
         g2.setColor(new Color(210, 210, 200));
         for (int x = 0; x <= world.getWidth(); x++) {
             g2.drawLine(x * cellSize, 0, x * cellSize, world.getHeight() * cellSize);
